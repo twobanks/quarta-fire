@@ -1,1 +1,12 @@
+/* 1. Importação direta do Google Fonts na primeira linha */
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Creepster&family=Roboto:wght@400;700&display=swap');
+
+/* 2. Importação base do Tailwind v4 */
 @import "tailwindcss";
+
+/* 3. Configuração do tema nativa do v4 */
+@theme {
+  --font-bebas: "Bebas Neue", sans-serif;
+  --font-creepster: "Creepster", cursive;
+  --font-roboto: "Roboto", sans-serif;
+}

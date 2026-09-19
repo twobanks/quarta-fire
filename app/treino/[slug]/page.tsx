@@ -1,5 +1,6 @@
 import AccordionInscricao from '@/components/AccordionInscricao';
 import GraficoAltimetria from '@/components/GraficoAltimetria';
+import LogoFire from '@/components/LogoFire';
 import MapaGpx from '@/components/MapaGpx';
 import { getInscritos, getSemanasParticipadas, getTreinoBySlug, inscreverCorredor } from '@/lib/api';
 import { processarArquivoGpx } from '@/lib/gpxParser';
@@ -45,13 +46,28 @@ export default async function DetalhesTreino({
     const nome = formData.get('nome') as string
     const instagram = formData.get('instagram') as string
 
-    if (!nome || !instagram) return
+    if (!nome || !instagram) {
+      return { error: 'Preencha todos os campos, por favor.' }
+    }
 
-    const instaLimpo = instagram.trim().replace('@', '')
+    const instaLimpo = instagram.trim().replace('@', '').toLowerCase()
+    const instaFormatado = `@${instaLimpo}`
 
-    await inscreverCorredor(treino.id, nome.trim(), `@${instaLimpo}`)
-    
-    revalidatePath(`/treino/${slug}`)
+    const jaInscrito = inscritos.some(
+      (participante: any) => participante.instagram.toLowerCase() === instaFormatado
+    )
+
+    if (jaInscrito) {
+      return { error: 'Uai, Seer! Você já confirmou presença neste treino.' }
+    }
+
+    try {
+      await inscreverCorredor(treino.id, nome.trim(), instaFormatado)
+      revalidatePath(`/treino/${slug}`)
+      return { success: true }
+    } catch (err) {
+      return { error: 'Ocorreu um erro ao salvar. Tente novamente.' }
+    }
   }
 
   return (
@@ -61,13 +77,10 @@ export default async function DetalhesTreino({
       <header className="sticky top-0 z-50 bg-neutral-950/90 backdrop-blur-md border-b border-neutral-900 shrink-0 h-16">
         <div className="max-w-7xl mx-auto px-4 h-full flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="text-2xl" aria-hidden="true">🔥</span>
-            <h1 className="text-xl font-black italic tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-orange-500 to-red-600">
-              QUARTA-FIRE
-            </h1>
+            <LogoFire className="w-80 mx-auto" />
           </div>
           <Link href="/" className="text-sm font-semibold text-neutral-400 hover:text-white transition-colors">
-            ← Voltar para a agenda
+            ← Voltar
           </Link>
         </div>
       </header>
