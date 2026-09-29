@@ -33,7 +33,7 @@ export async function getTreinoBySlug(slug: string) {
 export async function getInscritos(treino_id: string) {
   const { data, error } = await supabase
     .from('inscricoes')
-    .select('nome, instagram, status')
+    .select('nome, instagram, status, whatsapp')
     .eq('treino_id', treino_id)
     .order('created_at', { ascending: true })
 
@@ -44,15 +44,32 @@ export async function getInscritos(treino_id: string) {
   return data
 }
 
-export async function inscreverCorredor(treino_id: string, nome: string, instagram: string) {
+export async function inscreverCorredor(dados: {
+  treino_id: string;
+  nome: string;
+  whatsapp: string;
+  instagram: string;
+  genero: string;
+  contato_emergencia: string;
+}) {
   const { data, error } = await supabase
     .from('inscricoes')
     .insert([
-      { treino_id, nome, instagram }
-    ])
-    .select()
+      {
+        treino_id: dados.treino_id,
+        nome: dados.nome,
+        whatsapp: dados.whatsapp,
+        instagram: dados.instagram,
+        genero: dados.genero,
+        contato_emergencia: dados.contato_emergencia,
+      }
+    ]);
 
-  return { data, error }
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data;
 }
 
 export async function cadastrarTreinoComGpx(formData: FormData) {
@@ -138,7 +155,7 @@ export async function getHistoricoParticipacoes(instagram: string) {
   return count || 0
 }
 
-export async function getSemanasParticipadas(instagram: string, anoMes: string) {
+export async function getSemanasParticipadas(whatsapp: string, anoMes: string) {
   const [ano, mes] = anoMes.split('-')
   
   const primeiroDia = `${ano}-${mes}-01`
@@ -160,8 +177,8 @@ export async function getSemanasParticipadas(instagram: string, anoMes: string) 
 
   const { data: minhasInscricoes, error: erroInscricoes } = await supabase
     .from('inscricoes')
-    .select('treino_id, instagram')
-    .eq('instagram', instagram)
+    .select('treino_id, whatsapp')
+    .eq('whatsapp', whatsapp)
 
   if (erroInscricoes || !minhasInscricoes || minhasInscricoes.length === 0) return []
 

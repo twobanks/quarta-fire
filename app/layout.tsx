@@ -2,7 +2,7 @@ import './globals.css';
 
 
 export const metadata = {
-  title: 'QUARTA-FIRE | Coletivo de Corrida',
+  title: '🔥 QUARTA-FIRE | Coletivo de Corrida',
   description: 'Agenda mensal, rotas e lista de presença do coletivo QUARTA-FIRE.',
 }
 

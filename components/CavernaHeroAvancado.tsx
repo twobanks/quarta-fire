@@ -1,26 +1,68 @@
 'use client'
 
+import Link from "next/link";
+import { useEffect, useState } from "react";
+// IMPORTANTE: Ajuste este caminho para o local da sua função
+// import { getProximosTreinos } from "@/lib/supabase"; 
+
+interface TreinoAgenda {
+  date: string;
+  title: string;
+  isNext: boolean;
+}
+
 export default function CavernaHeroAvancado() {
-  // AGENDA DO MÊS
-  const agenda = [
-    { data: "04/10", titulo: "TREINO DE BASE", destaque: false },
-    { data: "11/10", titulo: "TRILHA NOTURNA", destaque: true },
-    { data: "18/10", titulo: "LONGÃO URBANO", destaque: false },
-    { data: "25/10", titulo: "DESAFIO DO MORRO", destaque: false },
-  ];
+  const [agendaTreinos, setAgendaTreinos] = useState<TreinoAgenda[]>([]);
+  const [proximoTreino, setProximoTreino] = useState<any>(null); // Estado para o Card
+
+  useEffect(() => {
+    async function fetchAgenda() {
+      // Simulação do retorno do seu Supabase para testarmos o layout agora
+      // Substitua pela chamada real: const treinosDB = await getProximosTreinos();
+      const treinosDB = [
+        {
+          titulo: "TRILHA NOTURNA DO TERROR",
+          data_treino: "2026-10-31",
+          distancia: "12 KM",
+          nivel: "AVANÇADO", // Assumindo que você adicione 'nivel' no banco, ou pode mockar
+          gpx_url: "url-do-gpx-aqui" 
+        },
+        { titulo: "LONGÃO URBANO", data_treino: "2026-11-05", distancia: "21 KM" }
+      ];
+      
+      if (treinosDB && treinosDB.length > 0) {
+        // Salva o primeiro treino completo para renderizar no CARD
+        setProximoTreino(treinosDB[0]);
+
+        // Formata os treinos para o Marquee
+        const treinosFormatados = treinosDB.map((treino, index) => {
+          const [ano, mes, dia] = treino.data_treino.split('-');
+          return {
+            date: `${dia}/${mes}`,
+            title: treino.titulo,
+            isNext: index === 0
+          };
+        });
+        
+        setAgendaTreinos(treinosFormatados);
+      }
+    }
+
+    fetchAgenda();
+  }, []);
 
   const AgendaMarquee = () => (
     <div className="flex items-center gap-8 px-4">
-      {agenda.map((treino, idx) => (
+      {agendaTreinos.map((treino, idx) => (
         <div key={idx} className="flex items-center gap-3 whitespace-nowrap">
           <span className="text-[#333]">✶</span>
-          {treino.destaque ? (
+          {treino.isNext ? (
             <div className="flex items-center gap-2 bg-orange-600/20 px-3 py-1 rounded-full border border-orange-500/30">
               <span className="text-orange-500 font-black text-xs animate-pulse">🔥 PRÓXIMO:</span>
-              <span className="text-orange-100 font-bold text-sm tracking-widest">{treino.data} - {treino.titulo}</span>
+              <span className="text-orange-100 font-bold text-sm tracking-widest">{treino.date} - {treino.title}</span>
             </div>
           ) : (
-            <span className="text-[#888] font-bold text-sm tracking-widest">{treino.data} - {treino.titulo}</span>
+            <span className="text-[#888] font-bold text-sm tracking-widest">{treino.date} - {treino.title}</span>
           )}
         </div>
       ))}
@@ -28,7 +70,6 @@ export default function CavernaHeroAvancado() {
   );
 
   return (
-    // FIX DO SCROLL AQUI: Usando 'fixed inset-0' e 'h-[100dvh]'
     <div className="fixed inset-0 h-[100dvh] w-full overflow-hidden bg-[#0a0a0a] font-sans flex flex-col select-none">
       
       <style>{`
@@ -60,14 +101,6 @@ export default function CavernaHeroAvancado() {
         .smoke-overlay {
           animation: smokeDrift 15s infinite alternate ease-in-out;
         }
-
-        @keyframes float {
-          0%, 100% { transform: translateY(0px) rotate(-6deg); }
-          50% { transform: translateY(-10px) rotate(-6deg); }
-        }
-        .animate-float {
-          animation: float 4s ease-in-out infinite;
-        }
       `}</style>
 
       {/* SVG FILTER PARA A FUMAÇA */}
@@ -96,26 +129,38 @@ export default function CavernaHeroAvancado() {
       </div>
 
       {/* MARQUEE: AGENDA DO MÊS */}
-      <div className="absolute top-0 left-0 w-full bg-[#111] overflow-hidden py-3 z-50 shadow-[0_5px_20px_rgba(0,0,0,0.8)] border-b border-[#222]">
-        <div className="animate-marquee">
-          <AgendaMarquee />
-          <AgendaMarquee />
-          <AgendaMarquee />
-          <AgendaMarquee />
+      {agendaTreinos.length > 0 && (
+        <div className="absolute top-0 left-0 w-full bg-[#111] overflow-hidden py-3 z-50 shadow-[0_5px_20px_rgba(0,0,0,0.8)] border-b border-[#222]">
+          <div className="animate-marquee">
+            <AgendaMarquee />
+            <AgendaMarquee />
+            <AgendaMarquee />
+            <AgendaMarquee />
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* CONTEÚDO CENTRAL: TÍTULO */}
-      <div className="relative flex-1 flex flex-col items-center justify-center w-full z-10 pt-12">
-        <div className="relative flex flex-col items-center justify-center">
-          <div className="relative z-10 flex flex-col items-center text-center -ml-4">
-            <h1 className="text-white text-[14vw] sm:text-[9rem] font-bebas tracking-wider drop-shadow-xl text-orange-500">
+      <div className="relative flex-1 flex flex-col items-center justify-center w-full z-10 pb-[10vh] sm:pb-[15vh]">
+        <div className="relative flex flex-col items-center justify-center w-full px-4">
+          
+          <div className="relative z-10 flex flex-col items-center text-center">
+            <h1 className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-red-600 text-[16vw] sm:text-[10rem] lg:text-[12rem] leading-none font-flamezinna tracking-wider drop-shadow-xl">
               QUARTA-FIRE
             </h1>
-            <p className="text-neutral-400 font-sans tracking-[0.3em] uppercase text-xs sm:text-sm mt-2">
-              A luz está no asfalto.
-            </p>
           </div>
+
+         <nav className="flex items-center gap-5 sm:gap-8">
+          <Link href="/sobre" className="text-neutral-300 hover:text-orange-400 font-bold text-xs sm:text-sm uppercase tracking-widest transition-colors">
+            Sobre
+          </Link>
+          <Link href="/treinos" className="text-neutral-300 hover:text-orange-400 font-bold text-xs sm:text-sm uppercase tracking-widest transition-colors">
+            Treinos
+          </Link>
+          <Link href="/apoiadores" className="text-neutral-300 hover:text-orange-400 font-bold text-xs sm:text-sm uppercase tracking-widest transition-colors">
+            Apoiadores
+          </Link>
+        </nav>
+
         </div>
       </div>
 

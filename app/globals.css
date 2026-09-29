@@ -4,9 +4,19 @@
 /* 2. Importação base do Tailwind v4 */
 @import "tailwindcss";
 
+@font-face {
+  font-family: 'Flamezinna';
+  /* O caminho começa com / apontando para a pasta public */
+  src: url('/fonts/Flamezinna.ttf') format('truetype'); 
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* 3. Configuração do tema nativa do v4 */
 @theme {
   --font-bebas: "Bebas Neue", sans-serif;
   --font-creepster: "Creepster", cursive;
   --font-roboto: "Roboto", sans-serif;
+  --font-flamezinna: "Flamezinna", cursive;
 }
