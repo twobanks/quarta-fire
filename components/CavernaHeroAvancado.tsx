@@ -2,45 +2,53 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-// IMPORTANTE: Ajuste este caminho para o local da sua função
-// import { getProximosTreinos } from "@/lib/supabase"; 
+// Importe a sua função real da API
+import { getProximosTreinos } from "@/lib/api";
 
 interface TreinoAgenda {
   date: string;
   title: string;
   isNext: boolean;
+  slug: string;
 }
 
 export default function CavernaHeroAvancado() {
   const [agendaTreinos, setAgendaTreinos] = useState<TreinoAgenda[]>([]);
-  const [proximoTreino, setProximoTreino] = useState<any>(null); // Estado para o Card
 
   useEffect(() => {
     async function fetchAgenda() {
-      // Simulação do retorno do seu Supabase para testarmos o layout agora
-      // Substitua pela chamada real: const treinosDB = await getProximosTreinos();
-      const treinosDB = [
-        {
-          titulo: "TRILHA NOTURNA DO TERROR",
-          data_treino: "2026-10-31",
-          distancia: "12 KM",
-          nivel: "AVANÇADO", // Assumindo que você adicione 'nivel' no banco, ou pode mockar
-          gpx_url: "url-do-gpx-aqui" 
-        },
-        { titulo: "LONGÃO URBANO", data_treino: "2026-11-05", distancia: "21 KM" }
-      ];
-      
-      if (treinosDB && treinosDB.length > 0) {
-        // Salva o primeiro treino completo para renderizar no CARD
-        setProximoTreino(treinosDB[0]);
+      // 1. Busca os treinos reais do banco de dados
+      const treinosDB = await getProximosTreinos();
 
-        // Formata os treinos para o Marquee
-        const treinosFormatados = treinosDB.map((treino, index) => {
-          const [ano, mes, dia] = treino.data_treino.split('-');
+      if (treinosDB && treinosDB.length > 0) {
+        // Pega o ano e mês atual (ex: "2026-10")
+        const hoje = new Date();
+        const anoAtual = hoje.getFullYear();
+        const mesAtual = String(hoje.getMonth() + 1).padStart(2, '0');
+        const anoMesAtual = `${anoAtual}-${mesAtual}`;
+
+        // 2. Filtra APENAS os treinos que acontecem no MÊS ATUAL
+        const treinosDoMes = treinosDB.filter((treino: any) => {
+          if (!treino.data_treino) return false;
+          return treino.data_treino.startsWith(anoMesAtual);
+        });
+
+        // Se não houver treinos no mês atual, podemos usar a lista geral para o marquee não ficar vazio
+        const listaParaExibir = treinosDoMes.length > 0 ? treinosDoMes : treinosDB;
+
+        // 3. Formata os treinos para o Marquee
+        const treinosFormatados = listaParaExibir.map((treino: any, index: number) => {
+          const partes = treino.data_treino.split('T')[0].split('-');
+          const ano = partes[0];
+          const mes = partes[1];
+          const dia = partes[2];
+
           return {
             date: `${dia}/${mes}`,
             title: treino.titulo,
-            isNext: index === 0
+            // O primeiro item da lista filtrada ganha o selo de PRÓXIMO 🔥
+            isNext: index === 0,
+            slug: treino.slug
           };
         });
         
@@ -54,17 +62,19 @@ export default function CavernaHeroAvancado() {
   const AgendaMarquee = () => (
     <div className="flex items-center gap-8 px-4">
       {agendaTreinos.map((treino, idx) => (
-        <div key={idx} className="flex items-center gap-3 whitespace-nowrap">
+        <Link href={`/treino/${treino.slug}`} key={idx} className="flex items-center gap-3 whitespace-nowrap group">
           <span className="text-[#333]">✶</span>
           {treino.isNext ? (
-            <div className="flex items-center gap-2 bg-orange-600/20 px-3 py-1 rounded-full border border-orange-500/30">
-              <span className="text-orange-500 font-black text-xs animate-pulse">🔥 PRÓXIMO:</span>
-              <span className="text-orange-100 font-bold text-sm tracking-widest">{treino.date} - {treino.title}</span>
+            <div className="flex items-center gap-2 bg-orange-600/20 px-3.5 py-1 rounded-full border border-orange-500/40 group-hover:border-orange-500 transition shadow-[0_0_15px_rgba(249,115,22,0.2)]">
+              <span className="text-orange-500 font-black text-xs animate-pulse tracking-wider">🔥 PRÓXIMO TREINO:</span>
+              <span className="text-orange-100 font-extrabold text-sm tracking-widest uppercase">{treino.date} - {treino.title}</span>
             </div>
           ) : (
-            <span className="text-[#888] font-bold text-sm tracking-widest">{treino.date} - {treino.title}</span>
+            <span className="text-[#888] group-hover:text-neutral-300 font-bold text-sm tracking-widest uppercase transition-colors">
+              {treino.date} - {treino.title}
+            </span>
           )}
-        </div>
+        </Link>
       ))}
     </div>
   );
@@ -80,7 +90,10 @@ export default function CavernaHeroAvancado() {
         .animate-marquee {
           display: flex;
           width: max-content;
-          animation: marquee 25s linear infinite;
+          animation: marquee 30s linear infinite;
+        }
+        .animate-marquee:hover {
+          animation-play-state: paused;
         }
 
         @keyframes fire {
@@ -123,14 +136,12 @@ export default function CavernaHeroAvancado() {
         }}
       />
 
-      {/* BACKGROUND: FUMAÇA */}
       <div className="absolute inset-0 z-0 pointer-events-none smoke-overlay mix-blend-screen opacity-30">
         <div className="w-full h-full bg-gradient-to-t from-orange-900/40 via-neutral-600/20 to-transparent" style={{ filter: 'url(#smoke-effect)' }} />
       </div>
 
-      {/* MARQUEE: AGENDA DO MÊS */}
       {agendaTreinos.length > 0 && (
-        <div className="absolute top-0 left-0 w-full bg-[#111] overflow-hidden py-3 z-50 shadow-[0_5px_20px_rgba(0,0,0,0.8)] border-b border-[#222]">
+        <div className="absolute top-0 left-0 w-full bg-[#111]/90 backdrop-blur-md overflow-hidden py-3 z-50 shadow-[0_5px_20px_rgba(0,0,0,0.8)] border-b border-white/10">
           <div className="animate-marquee">
             <AgendaMarquee />
             <AgendaMarquee />
@@ -144,12 +155,17 @@ export default function CavernaHeroAvancado() {
         <div className="relative flex flex-col items-center justify-center w-full px-4">
           
           <div className="relative z-10 flex flex-col items-center text-center">
-            <h1 className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-red-600 text-[16vw] sm:text-[10rem] lg:text-[12rem] leading-none font-flamezinna tracking-wider drop-shadow-xl">
+            <h1 
+              className="text-transparent bg-clip-text text-[16vw] sm:text-[10rem] lg:text-[12rem] leading-none font-flamezinna tracking-wider "
+              style={{
+                backgroundImage: 'linear-gradient(to top, #b45309 0%, #f97316 45%, #fbbf24 85%, #fef08a 100%)'
+              }}
+            >
               QUARTA-FIRE
             </h1>
           </div>
 
-         <nav className="flex items-center gap-5 sm:gap-8">
+         <nav className="flex items-center gap-5 sm:gap-8 mt-4">
           <Link href="/sobre" className="text-neutral-300 hover:text-orange-400 font-bold text-xs sm:text-sm uppercase tracking-widest transition-colors">
             Sobre
           </Link>
